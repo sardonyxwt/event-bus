@@ -184,7 +184,7 @@ class EventBusImpl implements EventBus {
 
 const eventBuses: { [key: string]: EventBus } = {};
 
-export function createEventBus<T>(config: EventBusConfig = {}): EventBus {
+export function createEventBus(config: EventBusConfig = {}): EventBus {
   const {
     name = uniqueId('eventBus'),
     isFrozen = false

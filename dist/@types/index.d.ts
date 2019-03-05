@@ -23,6 +23,6 @@ export interface EventBusDevTool {
     onCreate(eventBus: EventBus): void;
     onEvent(event: EventBusEvent): void;
 }
-export declare function createEventBus<T>(config?: EventBusConfig): EventBus;
+export declare function createEventBus(config?: EventBusConfig): EventBus;
 export declare function getEventBus(eventBusName: string): EventBus;
 export declare function setEventBusDevTool(devTool: Partial<EventBusDevTool>): void;
