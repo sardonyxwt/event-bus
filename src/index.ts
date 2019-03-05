@@ -25,7 +25,7 @@ export interface EventBus {
 
   registerEvent(eventName: string): EventBusDispatcher;
 
-  dispatch(eventName: string, data?): void;
+  publish(eventName: string, data?): void;
 
   subscribe(listener: EventBusListener, eventName?: string | string[]): string;
 
@@ -50,10 +50,11 @@ let eventBusDevTool: EventBusDevTool = {
 
 class EventBusImpl implements EventBus {
 
-  protected readonly _name: string;
-  protected _isFrozen: boolean;
-  protected _events: string[] = [];
-  protected _listeners: { [key: string]: EventBusListener } = {};
+  private readonly _name: string;
+  private _isFrozen: boolean;
+  private _events: string[] = [];
+  private _queue: Function[] = [];
+  private _listeners: { [key: string]: EventBusListener } = {};
 
   constructor(config: EventBusConfig) {
     const {name, isFrozen} = config;
@@ -87,44 +88,55 @@ class EventBusImpl implements EventBus {
     };
 
     const subscriberMacroName = `on${capitalizeFirstLetterEventName()}`;
+    const dispatcherMacroName = `dispatch${capitalizeFirstLetterEventName()}`;
 
     this[subscriberMacroName] = (listener: EventBusListener) => this.subscribe(listener, eventName);
 
-    const eventDispatcher = (data?) => this.dispatch(eventName, data);
+    const eventDispatcher = (data?) => this.publish(eventName, data);
 
-    this[eventName] = eventDispatcher;
+    this[dispatcherMacroName] = eventDispatcher;
 
     return eventDispatcher;
   }
 
-  dispatch(eventName: string, data?) {
-    if (data && typeof data === 'object') {
-      deepFreeze(data);
-    }
+  publish(eventName: string, data?) {
+    const eventDispatcher = () => {
+      if (data && typeof data === 'object') {
+        deepFreeze(data);
+      }
 
-    const onFulfilled = () => {
       const event: EventBusEvent = {
         eventBusName: this._name,
         eventName,
         data
       };
 
-      const dispatchEvent = (event: EventBusEvent) => {
-        eventBusDevTool.onEvent(event);
-        Object.getOwnPropertyNames(this._listeners).forEach(key => {
-          const listener = this._listeners[key];
-          try {
-            if (listener) listener(event);
-          } catch (reason) {
-            console.error(`Event bus listener ${key} error.`, event)
-          }
-        });
-      };
+      eventBusDevTool.onEvent(event);
 
-      dispatchEvent(event);
+      Object.getOwnPropertyNames(this._listeners).forEach(key => {
+        const listener = this._listeners[key];
+        try {
+          if (listener) listener(event);
+        } catch (reason) {
+          console.error(`Event bus listener ${key} error.`, event)
+        }
+      });
+
+      this._queue.shift();
+
+      if (this._queue.length > 0) {
+        const nextEventDispatcher = this._queue[0];
+        nextEventDispatcher();
+      }
     };
 
-    onFulfilled();
+    const isFirstInQuery = this._queue.length === 0;
+
+    this._queue.push(eventDispatcher);
+
+    if (isFirstInQuery) {
+      eventDispatcher();
+    }
   }
 
   subscribe(listener: EventBusListener, eventName?: string | string[]) {

@@ -36,8 +36,8 @@ describe('EventBus', () => {
     });
   });
 
-  it('dispatch', () => {
-    eventBus.dispatch(EVENT_NAME, TEST_VALUE);
+  it('publish', () => {
+    eventBus.publish(EVENT_NAME, TEST_VALUE);
   });
 
   it('unsubscribe', () => {

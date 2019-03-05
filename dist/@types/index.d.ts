@@ -14,7 +14,7 @@ export interface EventBus {
     readonly isLocked: boolean;
     readonly supportEvents: string[];
     registerEvent(eventName: string): EventBusDispatcher;
-    dispatch(eventName: string, data?: any): void;
+    publish(eventName: string, data?: any): void;
     subscribe(listener: EventBusListener, eventName?: string | string[]): string;
     unsubscribe(id: string): boolean;
     lock(): void;
