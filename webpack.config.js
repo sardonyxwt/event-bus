@@ -14,8 +14,8 @@ module.exports = {
   entry: './src/index.ts',
   devtool: 'source-map',
   output: {
-    filename: "./dist/state-store.min.js",
-    library: 'store',
+    filename: "./dist/event-bus.min.js",
+    library: 'eventBus',
     libraryTarget: 'umd',
     umdNamedDefine: true
   },
