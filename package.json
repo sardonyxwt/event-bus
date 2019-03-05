@@ -1,0 +1,61 @@
+{
+  "name": "@sardonyxwt/event-bus",
+  "version": "0.0.1",
+  "description": "Event Bus",
+  "keywords": [
+    "sclib",
+    "event",
+    "bus"
+  ],
+  "license": "MIT",
+  "author": "sardonyx.wt@gmail.com",
+  "contributors": [
+    "Kirill Petkov <sardonyx.wt@gmail.com>"
+  ],
+  "files": [
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md",
+    "dist/"
+  ],
+  "main": "dist/event-bus.min.js",
+  "typings": "dist/@types/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sardonyxwt/event-bus.git"
+  },
+  "scripts": {
+    "build": "cross-env NODE_ENV='production' webpack -p",
+    "test": "cross-env-shell webpack && jest",
+    "lint": "tslint -p . -c tslint.json --fix -t verbose",
+    "deploy": "cross-env-shell npm run build && npm publish --access public"
+  },
+  "jest": {
+    "testURL": "http://localhost/",
+    "moduleFileExtensions": [
+      "ts",
+      "js"
+    ],
+    "transform": {
+      "\\.(ts|tsx)$": "<rootDir>/node_modules/ts-jest/preprocessor.js"
+    },
+    "mapCoverage": true,
+    "testRegex": "/(test|src)/.*\\.(test|spec)\\.(ts|js)$"
+  },
+  "dependencies": {
+    "@sardonyxwt/utils": "1.6.4"
+  },
+  "devDependencies": {
+    "@types/jest": "^21.1.9",
+    "@types/node": "^8.0.47",
+    "clean-webpack-plugin": "0.1.17",
+    "cross-env": "5.1.1",
+    "jest": "^22.0.4",
+    "ts-jest": "^22.0.0",
+    "ts-loader": "^3.4.0",
+    "tslint": "^5.8.0",
+    "typescript": "^2.6.0",
+    "webpack": "^3.6.0",
+    "webpack-bundle-analyzer": "^2.9.1"
+  }
+}
