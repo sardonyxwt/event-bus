@@ -43,8 +43,8 @@ export interface EventBusDevTool {
 
 }
 
-const generateEventBusName = createUniqueIdGenerator();
-const generateEventBusListenerId = createUniqueIdGenerator();
+const generateEventBusName = createUniqueIdGenerator('EventBus');
+const generateEventBusListenerId = createUniqueIdGenerator('EventBusListener');
 
 let eventBusDevTool: EventBusDevTool = {
   onCreate: () => null,
