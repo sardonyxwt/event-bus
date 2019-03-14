@@ -1,5 +1,5 @@
 import {deepFreeze} from '@sardonyxwt/utils/object';
-import {uniqueId} from '@sardonyxwt/utils/generator';
+import {createUniqueIdGenerator} from '@sardonyxwt/utils/generator';
 
 export type EventBusConfig = {
   name?,
@@ -42,6 +42,9 @@ export interface EventBusDevTool {
   onEvent(event: EventBusEvent): void;
 
 }
+
+const generateEventBusName = createUniqueIdGenerator();
+const generateEventBusListenerId = createUniqueIdGenerator();
 
 let eventBusDevTool: EventBusDevTool = {
   onCreate: () => null,
@@ -154,7 +157,7 @@ class EventBusImpl implements EventBus {
       }
     });
 
-    const listenerId = uniqueId('listener');
+    const listenerId = generateEventBusListenerId();
     this._listeners[listenerId] = event => {
 
       if (eventNames.length === 0) {
@@ -186,7 +189,7 @@ const eventBuses: { [key: string]: EventBus } = {};
 
 export function createEventBus(config: EventBusConfig = {}): EventBus {
   const {
-    name = uniqueId('eventBus'),
+    name = generateEventBusName(),
     isFrozen = false
   } = config;
   if (name in eventBuses) {
