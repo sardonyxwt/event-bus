@@ -1,6 +1,6 @@
 {
   "name": "@sardonyxwt/event-bus",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Event Bus",
   "keywords": [
     "sclib",
@@ -43,7 +43,7 @@
     "testRegex": "/(test|src)/.*\\.(test|spec)\\.(ts|js)$"
   },
   "dependencies": {
-    "@sardonyxwt/utils": "2.1.0"
+    "@sardonyxwt/utils": "2.1.1"
   },
   "devDependencies": {
     "@types/jest": "^21.1.9",
