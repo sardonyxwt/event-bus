@@ -12,6 +12,7 @@ export type EventBusEvent = {
   data?
 };
 
+export type EventBusListenerUnsubscribeCallback = (() => boolean) & {listenerId: string};
 export type EventBusListener = (event: EventBusEvent) => void;
 export type EventBusDispatcher = (data?) => void;
 
@@ -27,7 +28,7 @@ export interface EventBus {
 
   publish(eventName: string, data?): void;
 
-  subscribe(listener: EventBusListener, eventName?: string | string[]): string;
+  subscribe(listener: EventBusListener, eventName?: string | string[]): EventBusListenerUnsubscribeCallback;
 
   unsubscribe(id: string): boolean;
 
@@ -172,7 +173,7 @@ class EventBusImpl implements EventBus {
         listener(event);
       }
     };
-    return listenerId;
+    return Object.assign(() => this.unsubscribe(listenerId), {listenerId});
   }
 
   unsubscribe(id: string) {

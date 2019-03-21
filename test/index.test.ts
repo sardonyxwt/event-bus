@@ -1,5 +1,5 @@
 /// <reference types="jest" />
-import {createEventBus, EventBus} from "../src";
+import {createEventBus, EventBus, EventBusListenerUnsubscribeCallback} from "../src";
 
 describe('EventBus', () => {
 
@@ -7,7 +7,7 @@ describe('EventBus', () => {
   const EVENT_NAME = 'testEvent';
 
   let eventBus: EventBus;
-  let listenerId: string;
+  let unsubscribeCallback: EventBusListenerUnsubscribeCallback;
 
   it('createEventBus', () => {
     eventBus = createEventBus({name: 'TestEventBus'});
@@ -31,7 +31,7 @@ describe('EventBus', () => {
   });
 
   it('subscribe', () => {
-    listenerId = eventBus.subscribe(evt => {
+    unsubscribeCallback = eventBus.subscribe(evt => {
       expect(evt.data).toEqual(TEST_VALUE);
     });
   });
@@ -41,7 +41,7 @@ describe('EventBus', () => {
   });
 
   it('unsubscribe', () => {
-    eventBus.unsubscribe(listenerId);
+    unsubscribeCallback();
   });
 
 

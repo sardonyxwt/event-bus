@@ -7,6 +7,9 @@ export declare type EventBusEvent = {
     eventName: string;
     data?: any;
 };
+export declare type EventBusListenerUnsubscribeCallback = (() => boolean) & {
+    listenerId: string;
+};
 export declare type EventBusListener = (event: EventBusEvent) => void;
 export declare type EventBusDispatcher = (data?: any) => void;
 export interface EventBus {
@@ -15,7 +18,7 @@ export interface EventBus {
     readonly supportEvents: string[];
     registerEvent(eventName: string): EventBusDispatcher;
     publish(eventName: string, data?: any): void;
-    subscribe(listener: EventBusListener, eventName?: string | string[]): string;
+    subscribe(listener: EventBusListener, eventName?: string | string[]): EventBusListenerUnsubscribeCallback;
     unsubscribe(id: string): boolean;
     lock(): void;
 }
