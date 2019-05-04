@@ -1,4 +1,3 @@
-/// <reference types="jest" />
 import {createEventBus, EventBus, EventBusListenerUnsubscribeCallback} from "../src";
 
 describe('EventBus', () => {

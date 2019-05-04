@@ -44,10 +44,10 @@ export interface EventBusDevTool {
 
 }
 
+const eventBuses: EventBus[] = [];
 const generateEventBusName = createUniqueIdGenerator('EventBus');
 const generateEventBusListenerId = createUniqueIdGenerator('EventBusListener');
-
-let eventBusDevTool: EventBusDevTool = {
+const eventBusDevTool: EventBusDevTool = {
   onCreate: () => null,
   onEvent: () => null
 };
@@ -92,7 +92,7 @@ class EventBusImpl implements EventBus {
     };
 
     const subscriberMacroName = `on${capitalizeFirstLetterEventName()}`;
-    const dispatcherMacroName = `dispatch${capitalizeFirstLetterEventName()}`;
+    const dispatcherMacroName = `publish${capitalizeFirstLetterEventName()}`;
 
     this[subscriberMacroName] = (listener: EventBusListener) => this.subscribe(listener, eventName);
 
@@ -186,27 +186,27 @@ class EventBusImpl implements EventBus {
 
 }
 
-const eventBuses: { [key: string]: EventBus } = {};
-
 export function createEventBus(config: EventBusConfig = {}): EventBus {
   const {
     name = generateEventBusName(),
     isFrozen = false
   } = config;
-  if (name in eventBuses) {
+  const eventBusExist = !!eventBuses.find(it => it === name);
+  if (eventBusExist) {
     throw new Error(`Event bus name must unique`);
   }
   let eventBus = new EventBusImpl({name, isFrozen});
-  eventBuses[name] = eventBus;
+  eventBuses.push(eventBus);
   eventBusDevTool.onCreate(eventBus);
   return eventBus;
 }
 
 export function getEventBus(eventBusName: string) {
-  if (!eventBuses[eventBusName]) {
+  const eventBus = eventBuses.find(it => it.name === eventBusName);
+  if (!eventBus) {
     throw new Error(`Event bus with name ${eventBusName} not present`);
   }
-  return eventBuses[eventBusName];
+  return eventBus;
 }
 
 export function setEventBusDevTool(devTool: Partial<EventBusDevTool>) {

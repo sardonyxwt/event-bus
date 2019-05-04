@@ -2,7 +2,7 @@ const CleanWebpackPlugin = require('clean-webpack-plugin');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
 const plugins = [
-  new CleanWebpackPlugin('dist'),
+  new CleanWebpackPlugin({ dry: true }),
   new BundleAnalyzerPlugin({
     openAnalyzer: false,
     analyzerMode: 'static',
@@ -14,7 +14,7 @@ module.exports = {
   entry: './src/index.ts',
   devtool: 'source-map',
   output: {
-    filename: "./dist/event-bus.min.js",
+    filename: "event-bus.min.js",
     library: 'eventBus',
     libraryTarget: 'umd',
     umdNamedDefine: true
@@ -26,7 +26,10 @@ module.exports = {
     rules: [
       {
         test: /\.ts$/,
-        loader: 'ts-loader'
+        loader: 'ts-loader',
+        options: {
+          configFile: "tsconfig.webpack.json"
+        }
       }
     ]
   },
