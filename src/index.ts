@@ -122,7 +122,7 @@ class EventBusImpl implements EventBus {
         try {
           if (listener) listener(event);
         } catch (reason) {
-          console.error(`Event bus listener ${key} error.`, event)
+          console.error(`Event bus listener ${key} error.`, event);
         }
       });
 
@@ -186,13 +186,16 @@ class EventBusImpl implements EventBus {
 
 }
 
+export function isEventBusExist(eventBusName: string) {
+  return !!eventBuses.find(it => it.name === eventBusName);
+}
+
 export function createEventBus(config: EventBusConfig = {}): EventBus {
   const {
     name = generateEventBusName(),
     isFrozen = false
   } = config;
-  const eventBusExist = !!eventBuses.find(it => it === name);
-  if (eventBusExist) {
+  if (isEventBusExist(name)) {
     throw new Error(`Event bus name must unique`);
   }
   let eventBus = new EventBusImpl({name, isFrozen});
@@ -202,11 +205,10 @@ export function createEventBus(config: EventBusConfig = {}): EventBus {
 }
 
 export function getEventBus(eventBusName: string) {
-  const eventBus = eventBuses.find(it => it.name === eventBusName);
-  if (!eventBus) {
+  if (!isEventBusExist(eventBusName)) {
     throw new Error(`Event bus with name ${eventBusName} not present`);
   }
-  return eventBus;
+  return eventBuses.find(it => it.name === eventBusName);
 }
 
 export function setEventBusDevTool(devTool: Partial<EventBusDevTool>) {

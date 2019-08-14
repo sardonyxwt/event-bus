@@ -1,4 +1,4 @@
-import {createEventBus, EventBus, EventBusListenerUnsubscribeCallback} from "../src";
+import {createEventBus, isEventBusExist, getEventBus, EventBus, EventBusListenerUnsubscribeCallback} from "../src";
 
 describe('EventBus', () => {
 
@@ -10,6 +10,15 @@ describe('EventBus', () => {
 
   it('createEventBus', () => {
     eventBus = createEventBus({name: 'TestEventBus'});
+  });
+
+  it('isStoreExist', () => {
+    expect(isEventBusExist('TestEventBus')).toBeTruthy();
+    expect(isEventBusExist('NotPresentEventBusName')).toBeFalsy();
+  });
+
+  it('getStore', () => {
+    getEventBus('TestEventBus');
   });
 
   it('registerEvent', () => {
