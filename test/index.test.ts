@@ -52,7 +52,6 @@ describe('EventBus', () => {
     unsubscribeCallback();
   });
 
-
   it('getSupportEvents', () => {
     expect(eventBus.supportEvents).toEqual([EVENT_NAME]);
   });

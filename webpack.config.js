@@ -1,12 +1,12 @@
-const CleanWebpackPlugin = require('clean-webpack-plugin');
+const {CleanWebpackPlugin} = require('clean-webpack-plugin');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
 const plugins = [
-  new CleanWebpackPlugin({ dry: true }),
+  new CleanWebpackPlugin(),
   new BundleAnalyzerPlugin({
     openAnalyzer: false,
     analyzerMode: 'static',
-    reportFilename: `${__dirname}/bundle-report.html`
+    reportFilename: `${__dirname}/report/bundle-report.html`
   })
 ];
 

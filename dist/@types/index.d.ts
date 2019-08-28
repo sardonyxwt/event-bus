@@ -1,6 +1,7 @@
 export declare type EventBusConfig = {
-    name?: any;
+    name?: string;
     isFrozen?: boolean;
+    isImmutabilityEnabled?: boolean;
 };
 export declare type EventBusEvent = {
     eventBusName: string;
