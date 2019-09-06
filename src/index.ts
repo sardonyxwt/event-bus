@@ -13,6 +13,10 @@ export type EventBusEvent = {
     data?;
 };
 
+export type ScopeError<T = any> = EventBusEvent & {
+    reason;
+};
+
 export type EventBusListenerUnsubscribeCallback = (() => boolean) & { listenerId: string };
 export type EventBusListener = (event: EventBusEvent) => void;
 export type EventBusDispatcher = (data?) => void;
@@ -24,7 +28,7 @@ export interface EventBus {
 
     registerEvent(eventName: string): EventBusDispatcher;
     publish(eventName: string, data?): void;
-    subscribe(listener: EventBusListener, eventName?: string | string[]): EventBusListenerUnsubscribeCallback;
+    subscribe(listener: EventBusListener, eventNames?: string[]): EventBusListenerUnsubscribeCallback;
     unsubscribe(id: string): boolean;
     lock(): void;
 }
@@ -32,34 +36,33 @@ export interface EventBus {
 export interface EventBusDevTool {
     onCreate(eventBus: EventBus): void;
     onEvent(event: EventBusEvent): void;
+    onEventListenerError(error: ScopeError): void;
 }
 
-const eventBuses: EventBus[] = [];
+const eventBuses = new Map<string, EventBus>();
 const generateEventBusName = createUniqueIdGenerator('EventBus');
 const generateEventBusListenerId = createUniqueIdGenerator('EventBusListener');
 const eventBusDevTool: EventBusDevTool = {
     onCreate: () => null,
-    onEvent: () => null
+    onEvent: () => null,
+    onEventListenerError: () => null
 };
 
 class EventBusImpl implements EventBus {
 
-    private readonly _name: string;
+    public readonly name: string;
+    public readonly isImmutabilityEnabled: boolean;
+
     private _isFrozen: boolean;
-    private readonly _isImmutabilityEnabled: boolean;
     private _events: string[] = [];
     private _queue: Function[] = [];
-    private _listeners: { [key: string]: EventBusListener } = {};
+    private _listeners = new Map<string, EventBusListener>();
 
     constructor(config: EventBusConfig) {
         const {name, isFrozen, isImmutabilityEnabled} = config;
-        this._name = name;
+        this.name = name;
+        this.isImmutabilityEnabled = isImmutabilityEnabled;
         this._isFrozen = isFrozen;
-        this._isImmutabilityEnabled = isImmutabilityEnabled;
-    }
-
-    get name() {
-        return this._name;
     }
 
     get isLocked() {
@@ -74,8 +77,8 @@ class EventBusImpl implements EventBus {
         if (this._isFrozen) {
             throw new Error(`This event bus is locked you can't add new event.`);
         }
-        if (!!this._events.find(it => it === eventName) || (eventName in this)) {
-            throw new Error(`Event with name ${eventName} is duplicate or reserved in event bus ${this._name}.`);
+        if (this.isEventPresent(eventName) || (eventName in this)) {
+            throw new Error(`Event with name ${eventName} is duplicate or reserved in event bus ${this.name}.`);
         }
         this._events.push(eventName);
 
@@ -86,7 +89,9 @@ class EventBusImpl implements EventBus {
         const subscriberMacroName = `on${capitalizeFirstLetterEventName()}`;
         const dispatcherMacroName = `publish${capitalizeFirstLetterEventName()}`;
 
-        this[subscriberMacroName] = (listener: EventBusListener) => this.subscribe(listener, eventName);
+        this[subscriberMacroName] = (listener: EventBusListener) => {
+            this.subscribe(listener, [eventName]);
+        };
 
         const eventDispatcher = (data?) => this.publish(eventName, data);
 
@@ -97,24 +102,25 @@ class EventBusImpl implements EventBus {
 
     publish(eventName: string, data?) {
         const eventDispatcher = () => {
-            if (this._isImmutabilityEnabled && !!data && typeof data === 'object') {
+            if (this.isImmutabilityEnabled && !!data && typeof data === 'object') {
                 deepFreeze(data);
             }
 
             const event: EventBusEvent = {
-                eventBusName: this._name,
+                eventBusName: this.name,
                 eventName,
                 data
             };
 
             eventBusDevTool.onEvent(event);
 
-            Object.getOwnPropertyNames(this._listeners).forEach(key => {
-                const listener = this._listeners[key];
+            this._listeners.forEach(listener => {
                 try {
-                    if (listener) listener(event);
+                    if (listener) {
+                        listener(event);
+                    }
                 } catch (reason) {
-                    console.error(`Event bus listener ${key} error.`, event);
+                    eventBusDevTool.onEventListenerError({...event, reason});
                 }
             });
 
@@ -135,28 +141,16 @@ class EventBusImpl implements EventBus {
         }
     }
 
-    subscribe(listener: EventBusListener, eventName?: string | string[]) {
-        const eventNames: string[] = [];
-
-        if (Array.isArray(eventName)) {
-            eventNames.push(...eventName);
-        } else if (eventName) {
-            eventNames.push(eventName);
-        }
-
+    subscribe(listener: EventBusListener, eventNames: string[] = []) {
         eventNames.forEach(eventName => {
-            if (this._events.findIndex(it => it === eventName) === -1) {
+            if (!this.isEventPresent(eventName)) {
                 throw new Error(`Event (${eventName}) not present in scope.`);
             }
         });
 
         const listenerId = generateEventBusListenerId();
-        this._listeners[listenerId] = event => {
 
-            if (eventNames.length === 0) {
-                return listener(event);
-            }
-
+        const accurateListener = event => {
             const isActionPresentInScope = eventNames.findIndex(
                 eventName => eventName === event.eventName
             ) !== -1;
@@ -165,21 +159,28 @@ class EventBusImpl implements EventBus {
                 listener(event);
             }
         };
+
+        this._listeners.set(listenerId, eventNames.length === 0 ? listener : accurateListener);
+
         return Object.assign(() => this.unsubscribe(listenerId), {listenerId});
     }
 
     unsubscribe(id: string) {
-        return delete this._listeners[id];
+        return this._listeners.delete(id);
     }
 
     lock() {
         this._isFrozen = true;
     }
 
+    private isEventPresent(eventName: string) {
+        return  this._events.findIndex(it => it === eventName) !== -1;
+    }
+
 }
 
-export function isEventBusExist(eventBusName: string) {
-    return !!eventBuses.find(it => it.name === eventBusName);
+export function isEventBusExist(eventBusName: string): boolean {
+    return eventBuses.has(eventBusName);
 }
 
 export function createEventBus(config: EventBusConfig = {}): EventBus {
@@ -192,16 +193,13 @@ export function createEventBus(config: EventBusConfig = {}): EventBus {
         throw new Error(`Event bus name must unique`);
     }
     let eventBus = new EventBusImpl({name, isFrozen, isImmutabilityEnabled});
-    eventBuses.push(eventBus);
+    eventBuses.set(name, eventBus);
     eventBusDevTool.onCreate(eventBus);
     return eventBus;
 }
 
-export function getEventBus(eventBusName: string) {
-    if (!isEventBusExist(eventBusName)) {
-        throw new Error(`Event bus with name ${eventBusName} not present`);
-    }
-    return eventBuses.find(it => it.name === eventBusName);
+export function getEventBus(eventBusName: string): EventBus {
+    return eventBuses.get(eventBusName);
 }
 
 export function setEventBusDevTool(devTool: Partial<EventBusDevTool>) {

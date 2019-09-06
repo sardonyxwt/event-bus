@@ -8,6 +8,9 @@ export declare type EventBusEvent = {
     eventName: string;
     data?: any;
 };
+export declare type ScopeError<T = any> = EventBusEvent & {
+    reason: any;
+};
 export declare type EventBusListenerUnsubscribeCallback = (() => boolean) & {
     listenerId: string;
 };
@@ -19,13 +22,14 @@ export interface EventBus {
     readonly supportEvents: string[];
     registerEvent(eventName: string): EventBusDispatcher;
     publish(eventName: string, data?: any): void;
-    subscribe(listener: EventBusListener, eventName?: string | string[]): EventBusListenerUnsubscribeCallback;
+    subscribe(listener: EventBusListener, eventNames?: string[]): EventBusListenerUnsubscribeCallback;
     unsubscribe(id: string): boolean;
     lock(): void;
 }
 export interface EventBusDevTool {
     onCreate(eventBus: EventBus): void;
     onEvent(event: EventBusEvent): void;
+    onEventListenerError(error: ScopeError): void;
 }
 export declare function isEventBusExist(eventBusName: string): boolean;
 export declare function createEventBus(config?: EventBusConfig): EventBus;
