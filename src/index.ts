@@ -13,7 +13,7 @@ export type EventBusEvent = {
     data?;
 };
 
-export type ScopeError<T = any> = EventBusEvent & {
+export type EventBusError<T = any> = EventBusEvent & {
     reason;
 };
 
@@ -36,7 +36,7 @@ export interface EventBus {
 export interface EventBusDevTool {
     onCreate(eventBus: EventBus): void;
     onEvent(event: EventBusEvent): void;
-    onEventListenerError(error: ScopeError): void;
+    onEventListenerError(error: EventBusError): void;
 }
 
 const eventBuses = new Map<string, EventBus>();

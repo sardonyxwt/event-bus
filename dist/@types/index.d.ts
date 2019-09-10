@@ -8,7 +8,7 @@ export declare type EventBusEvent = {
     eventName: string;
     data?: any;
 };
-export declare type ScopeError<T = any> = EventBusEvent & {
+export declare type EventBusError<T = any> = EventBusEvent & {
     reason: any;
 };
 export declare type EventBusListenerUnsubscribeCallback = (() => boolean) & {
@@ -29,7 +29,7 @@ export interface EventBus {
 export interface EventBusDevTool {
     onCreate(eventBus: EventBus): void;
     onEvent(event: EventBusEvent): void;
-    onEventListenerError(error: ScopeError): void;
+    onEventListenerError(error: EventBusError): void;
 }
 export declare function isEventBusExist(eventBusName: string): boolean;
 export declare function createEventBus(config?: EventBusConfig): EventBus;
