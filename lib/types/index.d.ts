@@ -35,4 +35,3 @@ export declare function isEventBusExist(eventBusName: string): boolean;
 export declare function createEventBus(config?: EventBusConfig): EventBus;
 export declare function getEventBus(eventBusName: string): EventBus;
 export declare function setEventBusDevTool(devTool: Partial<EventBusDevTool>): void;
-//# sourceMappingURL=index.d.ts.map

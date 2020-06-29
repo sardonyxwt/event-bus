@@ -12,12 +12,12 @@ describe('EventBus', () => {
     eventBus = createEventBus({name: 'TestEventBus'});
   });
 
-  it('isStoreExist', () => {
+  it('isEventBusExist', () => {
     expect(isEventBusExist('TestEventBus')).toBeTruthy();
     expect(isEventBusExist('NotPresentEventBusName')).toBeFalsy();
   });
 
-  it('getStore', () => {
+  it('getEventBus', () => {
     getEventBus('TestEventBus');
   });
 
