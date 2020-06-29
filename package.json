@@ -1,6 +1,6 @@
 {
     "name": "@sardonyxwt/event-bus",
-    "version": "1.4.6",
+    "version": "1.4.7",
     "description": "Event Bus",
     "main": "lib/event-bus.cjs.js",
     "module": "lib/event-bus.esm.js",
