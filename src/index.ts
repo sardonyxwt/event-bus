@@ -1,4 +1,4 @@
-import {deepFreeze, createUniqueIdGenerator} from '@sardonyxwt/utils';
+import { deepFreeze, createUniqueIdGenerator } from '@sardonyxwt/utils';
 
 export type EventBusConfig = {
     name?: string;
@@ -12,11 +12,13 @@ export type EventBusEvent = {
     data?;
 };
 
-export type EventBusError<T = any> = EventBusEvent & {
+export type EventBusError = EventBusEvent & {
     reason;
 };
 
-export type EventBusListenerUnsubscribeCallback = (() => boolean) & { listenerId: string };
+export type EventBusListenerUnsubscribeCallback = (() => boolean) & {
+    listenerId: string;
+};
 export type EventBusListener = (event: EventBusEvent) => void;
 export type EventBusDispatcher = (data?) => void;
 
@@ -27,7 +29,10 @@ export interface EventBus {
 
     registerEvent(eventName: string): EventBusDispatcher;
     publish(eventName: string, data?): void;
-    subscribe(listener: EventBusListener, eventNames?: string[]): EventBusListenerUnsubscribeCallback;
+    subscribe(
+        listener: EventBusListener,
+        eventNames?: string[],
+    ): EventBusListenerUnsubscribeCallback;
     unsubscribe(id: string): boolean;
     lock(): void;
 }
@@ -44,21 +49,20 @@ const generateEventBusListenerId = createUniqueIdGenerator('EventBusListener');
 const eventBusDevTool: EventBusDevTool = {
     onCreate: () => null,
     onEvent: () => null,
-    onEventListenerError: () => null
+    onEventListenerError: () => null,
 };
 
 class EventBusImpl implements EventBus {
-
     public readonly name: string;
     public readonly isImmutabilityEnabled: boolean;
 
     private _isFrozen: boolean;
     private _events: string[] = [];
-    private _queue: Function[] = [];
+    private _queue: (() => void)[] = [];
     private _listeners = new Map<string, EventBusListener>();
 
     constructor(config: EventBusConfig) {
-        const {name, isFrozen, isImmutabilityEnabled} = config;
+        const { name, isFrozen, isImmutabilityEnabled } = config;
         this.name = name;
         this.isImmutabilityEnabled = isImmutabilityEnabled;
         this._isFrozen = isFrozen;
@@ -74,10 +78,14 @@ class EventBusImpl implements EventBus {
 
     registerEvent(eventName: string) {
         if (this._isFrozen) {
-            throw new Error(`This event bus is locked you can't add new event.`);
+            throw new Error(
+                `This event bus is locked you can't add new event.`,
+            );
         }
-        if (this.isEventPresent(eventName) || (eventName in this)) {
-            throw new Error(`Event with name ${eventName} is duplicate or reserved in event bus ${this.name}.`);
+        if (this.isEventPresent(eventName) || eventName in this) {
+            throw new Error(
+                `Event with name ${eventName} is duplicate or reserved in event bus ${this.name}.`,
+            );
         }
         this._events.push(eventName);
 
@@ -101,25 +109,29 @@ class EventBusImpl implements EventBus {
 
     publish(eventName: string, data?) {
         const eventDispatcher = () => {
-            if (this.isImmutabilityEnabled && !!data && typeof data === 'object') {
+            if (
+                this.isImmutabilityEnabled &&
+                !!data &&
+                typeof data === 'object'
+            ) {
                 deepFreeze(data);
             }
 
             const event: EventBusEvent = {
                 eventBusName: this.name,
                 eventName,
-                data
+                data,
             };
 
             eventBusDevTool.onEvent(event);
 
-            this._listeners.forEach(listener => {
+            this._listeners.forEach((listener) => {
                 try {
                     if (listener) {
                         listener(event);
                     }
                 } catch (reason) {
-                    eventBusDevTool.onEventListenerError({...event, reason});
+                    eventBusDevTool.onEventListenerError({ ...event, reason });
                 }
             });
 
@@ -141,7 +153,7 @@ class EventBusImpl implements EventBus {
     }
 
     subscribe(listener: EventBusListener, eventNames: string[] = []) {
-        eventNames.forEach(eventName => {
+        eventNames.forEach((eventName) => {
             if (!this.isEventPresent(eventName)) {
                 throw new Error(`Event (${eventName}) not present in scope.`);
             }
@@ -149,19 +161,25 @@ class EventBusImpl implements EventBus {
 
         const listenerId = generateEventBusListenerId();
 
-        const accurateListener = event => {
-            const isActionPresentInScope = eventNames.findIndex(
-                eventName => eventName === event.eventName
-            ) !== -1;
+        const accurateListener = (event) => {
+            const isActionPresentInScope =
+                eventNames.findIndex(
+                    (eventName) => eventName === event.eventName,
+                ) !== -1;
 
             if (isActionPresentInScope) {
                 listener(event);
             }
         };
 
-        this._listeners.set(listenerId, eventNames.length === 0 ? listener : accurateListener);
+        this._listeners.set(
+            listenerId,
+            eventNames.length === 0 ? listener : accurateListener,
+        );
 
-        return Object.assign(() => this.unsubscribe(listenerId), {listenerId});
+        return Object.assign(() => this.unsubscribe(listenerId), {
+            listenerId,
+        });
     }
 
     unsubscribe(id: string) {
@@ -173,9 +191,8 @@ class EventBusImpl implements EventBus {
     }
 
     private isEventPresent(eventName: string) {
-        return  this._events.findIndex(it => it === eventName) !== -1;
+        return this._events.findIndex((it) => it === eventName) !== -1;
     }
-
 }
 
 export function isEventBusExist(eventBusName: string): boolean {
@@ -186,12 +203,16 @@ export function createEventBus(config: EventBusConfig = {}): EventBus {
     const {
         name = generateEventBusName(),
         isFrozen = false,
-        isImmutabilityEnabled = false
+        isImmutabilityEnabled = false,
     } = config;
     if (isEventBusExist(name)) {
         throw new Error(`Event bus name must unique`);
     }
-    let eventBus = new EventBusImpl({name, isFrozen, isImmutabilityEnabled});
+    const eventBus = new EventBusImpl({
+        name,
+        isFrozen,
+        isImmutabilityEnabled,
+    });
     eventBuses.set(name, eventBus);
     eventBusDevTool.onCreate(eventBus);
     return eventBus;
@@ -201,6 +222,6 @@ export function getEventBus(eventBusName: string): EventBus {
     return eventBuses.get(eventBusName);
 }
 
-export function setEventBusDevTool(devTool: Partial<EventBusDevTool>) {
+export function setEventBusDevTool(devTool: Partial<EventBusDevTool>): void {
     Object.assign(eventBusDevTool, devTool);
 }

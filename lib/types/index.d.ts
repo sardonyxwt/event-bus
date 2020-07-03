@@ -8,7 +8,7 @@ export declare type EventBusEvent = {
     eventName: string;
     data?: any;
 };
-export declare type EventBusError<T = any> = EventBusEvent & {
+export declare type EventBusError = EventBusEvent & {
     reason: any;
 };
 export declare type EventBusListenerUnsubscribeCallback = (() => boolean) & {
