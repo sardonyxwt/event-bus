@@ -1,42 +1,130 @@
 import { deepFreeze, createUniqueIdGenerator } from '@sardonyxwt/utils';
 
+/**
+ * @type EventBusConfig
+ * @description Initialization config for event bus.
+ */
 export type EventBusConfig = {
+    /**
+     * @field name
+     * @description Event bus name
+     */
     name?: string;
-    isFrozen?: boolean;
+    /**
+     * @field isImmutabilityEnabled
+     * @description If present event data freezed.
+     */
     isImmutabilityEnabled?: boolean;
 };
 
+/**
+ * @type EventBusEvent
+ * @description Event published in event bus.
+ */
 export type EventBusEvent = {
+    /**
+     * @field eventBusName
+     * @description Event bus name dispatched this event.
+     */
     eventBusName: string;
+    /**
+     * @field eventName
+     * @description Event name used to determinate what is event type.
+     */
     eventName: string;
+    /**
+     * @field data
+     * @description Event data published with event.
+     */
     data?;
 };
 
+/**
+ * @type EventBusError
+ * @description Error catch from subscriber.
+ */
 export type EventBusError = EventBusEvent & {
+    /**
+     * @field reason
+     * @description Any message to determinate error.
+     */
     reason;
 };
 
+/**
+ * @type EventBusListenerUnsubscribeCallback
+ * @description Unsubscribe callback for unsubscribe in future.
+ */
 export type EventBusListenerUnsubscribeCallback = (() => boolean) & {
+    /**
+     * @field listenerId
+     * @description Listener id for unsubscribe or other communication with event bus.
+     */
     listenerId: string;
 };
-export type EventBusListener = (event: EventBusEvent) => void;
-export type EventBusDispatcher = (data?) => void;
 
+export type EventBusListener = (event: EventBusEvent) => void;
+export type EventBusDispatcher<T> = (data?: T) => void;
+
+/**
+ * @interface EventBus
+ * @description Event bus event system for application modules communication.
+ */
 export interface EventBus {
+    /**
+     * @field name
+     * @description Event bus unique name.
+     */
     readonly name: string;
+
+    /**
+     * @field isLocked
+     * @description Lock status of event bus.
+     * Used to stop new event type registration.
+     */
     readonly isLocked: boolean;
+
+    /**
+     * @field supportEvents
+     * @description All available event types in event bus.
+     */
     readonly supportEvents: string[];
 
-    registerEvent(eventName: string): EventBusDispatcher;
-    publish(eventName: string, data?): void;
+    /**
+     * @method registerEvent
+     * @description Register new event type in event bus.
+     * @param eventName {string} Event type name.
+     * @returns {EventBusDispatcher} Return event typed dispatcher.
+     */
+    registerEvent<T = unknown>(eventName: string): EventBusDispatcher<T>;
+
+    /**
+     * @method publish
+     * @description Publish new event with data.
+     * @param eventName {string} Event type to dispatch.
+     * @param data {T} Data of event
+     */
+    publish<T = unknown>(eventName: string, data?: T): void;
+
     subscribe(
         listener: EventBusListener,
         eventNames?: string[],
     ): EventBusListenerUnsubscribeCallback;
+
     unsubscribe(id: string): boolean;
+
+    /**
+     * @method lock
+     * @description Forbid add new event types to event bus.
+     */
     lock(): void;
 }
 
+/**
+ * @interface EventBusDevTool
+ * @description Event bus dev tools.
+ * @example Use it to print events in console.
+ */
 export interface EventBusDevTool {
     onCreate(eventBus: EventBus): void;
     onEvent(event: EventBusEvent): void;
@@ -56,16 +144,15 @@ class EventBusImpl implements EventBus {
     public readonly name: string;
     public readonly isImmutabilityEnabled: boolean;
 
-    private _isFrozen: boolean;
+    private _isFrozen = false;
     private _events: string[] = [];
     private _queue: (() => void)[] = [];
     private _listeners = new Map<string, EventBusListener>();
 
     constructor(config: EventBusConfig) {
-        const { name, isFrozen, isImmutabilityEnabled } = config;
+        const { name, isImmutabilityEnabled } = config;
         this.name = name;
         this.isImmutabilityEnabled = isImmutabilityEnabled;
-        this._isFrozen = isFrozen;
     }
 
     get isLocked() {
@@ -76,7 +163,7 @@ class EventBusImpl implements EventBus {
         return [...this._events];
     }
 
-    registerEvent(eventName: string) {
+    registerEvent<T = unknown>(eventName: string) {
         if (this._isFrozen) {
             throw new Error(
                 `This event bus is locked you can't add new event.`,
@@ -100,21 +187,21 @@ class EventBusImpl implements EventBus {
             this.subscribe(listener, [eventName]);
         };
 
-        const eventDispatcher = (data?) => this.publish(eventName, data);
+        const eventDispatcher = (data?: T) => this.publish(eventName, data);
 
         this[dispatcherMacroName] = eventDispatcher;
 
         return eventDispatcher;
     }
 
-    publish(eventName: string, data?) {
+    publish<T = unknown>(eventName: string, data?: T) {
         const eventDispatcher = () => {
             if (
                 this.isImmutabilityEnabled &&
                 !!data &&
                 typeof data === 'object'
             ) {
-                deepFreeze(data);
+                deepFreeze(data as Record<string, never>);
             }
 
             const event: EventBusEvent = {
@@ -195,14 +282,25 @@ class EventBusImpl implements EventBus {
     }
 }
 
+/**
+ * @function isEventBusExist
+ * @description Check if event bus with same name present.
+ * @param eventBusName {string} Event bus name to check if event bus registered before.
+ * @returns {boolean}
+ */
 export function isEventBusExist(eventBusName: string): boolean {
     return eventBuses.has(eventBusName);
 }
 
+/**
+ * @function createEventBus
+ * @description Create event bus end register it.
+ * @param config {EventBusConfig} Event bus config used to create event bus.
+ * @returns {EventBus}
+ */
 export function createEventBus(config: EventBusConfig = {}): EventBus {
     const {
         name = generateEventBusName(),
-        isFrozen = false,
         isImmutabilityEnabled = false,
     } = config;
     if (isEventBusExist(name)) {
@@ -210,7 +308,6 @@ export function createEventBus(config: EventBusConfig = {}): EventBus {
     }
     const eventBus = new EventBusImpl({
         name,
-        isFrozen,
         isImmutabilityEnabled,
     });
     eventBuses.set(name, eventBus);
@@ -218,10 +315,21 @@ export function createEventBus(config: EventBusConfig = {}): EventBus {
     return eventBus;
 }
 
+/**
+ * @function getEventBus
+ * @description Return event bus if present.
+ * @param eventBusName {string} Event bus name.
+ * @returns {EventBus}
+ */
 export function getEventBus(eventBusName: string): EventBus {
     return eventBuses.get(eventBusName);
 }
 
+/**
+ * @method setEventBusDevTool
+ * @description Set event bus dev tools to control how event buses work.
+ * @param devTool Dev tools to control how event buses work.
+ */
 export function setEventBusDevTool(devTool: Partial<EventBusDevTool>): void {
     Object.assign(eventBusDevTool, devTool);
 }

@@ -3,6 +3,7 @@
 .idea/
 **/*.iml
 
+**/.DS_Store
 **/npm-debug.log
 report/
 lib/
